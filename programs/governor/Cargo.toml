@@ -1,0 +1,28 @@
+[package]
+name = "governor"
+version = "0.1.0"
+description = "Karn Protocol — Governor program (proposals, voting, execution)"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "governor"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = "0.32.1"
+anchor-spl = "0.32.1"
+karn-shared = { path = "../../crates/karn-shared" }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

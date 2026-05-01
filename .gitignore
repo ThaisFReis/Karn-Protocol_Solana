@@ -1,0 +1,22 @@
+.anchor
+.DS_Store
+target
+**/*.rs.bk
+node_modules
+test-ledger
+.yarn
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Deploy artifacts (commit only the .gitkeep)
+deployments/*.json
+!deployments/.gitkeep
+
