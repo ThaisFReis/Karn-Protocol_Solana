@@ -1,14 +1,17 @@
 //! Governor — proposals, voting, execution.
 //!
-//! See `~/Documentos/Workspace/Karn Protocol/contracts/governor/src/lib.rs`
-//! for the canonical Stellar reference implementation.
+//! Stellar parity: `governor` contract. See CONFIG.md §Governor.
 
 use anchor_lang::prelude::*;
 
 pub mod errors;
 pub mod events;
+pub mod instructions;
+pub mod state;
 
 pub use errors::GovernorError;
+pub use instructions::*;
+pub use state::ProposalAction;
 
 declare_id!("6RfCxo65k9KZaJZvpHDEaav1ahDcx7hn13XBdmDtdLRm");
 
@@ -16,11 +19,17 @@ declare_id!("6RfCxo65k9KZaJZvpHDEaav1ahDcx7hn13XBdmDtdLRm");
 pub mod governor {
     use super::*;
 
-    /// Placeholder — real `initialize` lands in M13.
-    pub fn initialize(_ctx: Context<Initialize>) -> Result<()> {
-        Ok(())
+    /// Bootstrap both Governor PDAs (GovernorConfigPda + GovernanceConfig).
+    pub fn initialize(ctx: Context<Initialize>, valocracy: Pubkey) -> Result<()> {
+        instructions::initialize::handler(ctx, valocracy)
+    }
+
+    /// Create a governance proposal (KRN-02 snapshot voting).
+    pub fn propose(
+        ctx: Context<Propose>,
+        description: String,
+        action: ProposalAction,
+    ) -> Result<()> {
+        instructions::propose::handler(ctx, description, action)
     }
 }
-
-#[derive(Accounts)]
-pub struct Initialize {}

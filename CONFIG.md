@@ -273,7 +273,23 @@ Doc: [`docs/modules/M11.md`](docs/modules/M11.md)
 
 Doc: [`docs/modules/M12.md`](docs/modules/M12.md)
 
-### M13..M18 — ⏳ Pendentes
+### M13 — ✅ Concluído — Governor: Proposals + Config
+
+**Data:** 2026-05-01
+
+**Entregáveis:**
+- `programs/governor/src/state.rs` — `GovernorConfigPda` (SIZE=42), `GovernanceConfig` (SIZE=41), `ProposalAction` (10 variantes), `Proposal` (MAX_SIZE=900)
+- `programs/governor/src/instructions/initialize.rs` — cria ambos os PDAs com defaults de `karn-shared`
+- `programs/governor/src/instructions/propose.rs` — lê `UserStats` e `Config` da Valocracy via `seeds::program` (DT-04, sem CPI); verifica mana ≥ threshold; snapshot KRN-02 (`total_mana_at_creation = total_supply × MEMBER_FLOOR`)
+- `programs/governor/src/instructions/mod.rs` — glob re-exports para o `#[program]` macro
+- `programs/governor/src/lib.rs` — dispatchers `initialize` e `propose`
+- `tests/governor/propose.spec.ts` — 5 testes Bankrun com injeção de contas sintéticas (65 total passando)
+
+**KRN-02 verificado:** `total_mana_at_creation = total_supply × MEMBER_FLOOR` snapshot na criação da proposta.
+
+Doc: [`docs/modules/M13.md`](docs/modules/M13.md)
+
+### M14..M18 — ⏳ Pendentes
 
 Ver PRD §3 e cronograma §4.
 
