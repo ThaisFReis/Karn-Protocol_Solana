@@ -23,7 +23,8 @@ custom-panic = []
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 anchor-spl = "0.32.1"
 karn-shared = { path = "../../crates/karn-shared" }
-valocracy = { path = "../valocracy", features = ["no-entrypoint"] }
+valocracy = { path = "../valocracy", features = ["cpi"] }
+treasury = { path = "../treasury", features = ["cpi"] }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

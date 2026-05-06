@@ -47,8 +47,11 @@ impl GovernanceConfig {
 pub enum ProposalAction {
     TreasuryTransfer { receiver: Pubkey, amount: u64 },
     TreasuryApproveScholarship { lab_id: u32, member: Pubkey },
+    TreasuryUpdateGovernor { new_governor: Pubkey },
     ValocracySetValor { valor_id: u64, rarity: u64, secondary_rarity: u64, track_id: u64, metadata: String },
     ValocracySetGuardianTracks { guardian: Pubkey, track_ids: Vec<u64> },
+    ValocracyUpdateGovernor { new_governor: Pubkey },
+    ValocracyUpdateTreasury { new_treasury: Pubkey },
     ValocracyUpdatePrimary { account: Pubkey, new_track_id: u64, new_valor_id: u64 },
     ValocracySetCreditAuthority { authority: Pubkey, track_ids: Vec<u64> },
     ValocracyRevoke { token_id: u64 },
@@ -94,4 +97,69 @@ impl Proposal {
     /// Action (max): 1 discriminant + 4 (vec len) + 32*8 (32 track_ids) + 32 = 293
     /// Total: 887 → rounded up to 900.
     pub const MAX_SIZE: usize = 900;
+}
+
+// ─── Vote ────────────────────────────────────────────────────────────────────
+
+/// Per-(proposal_id, voter) vote receipt. Seeds: `[VOTE, id_le8, voter]`.
+/// Existence of this PDA is the anti-double-vote guard.
+#[account]
+pub struct Vote {
+    pub support: bool,
+    pub bump: u8,
+}
+
+impl Vote {
+    /// 1 + 1 = 2 bytes (+ 8 discriminator).
+    pub const SIZE: usize = 1 + 1;
+}
+
+// ─── ProposalState ───────────────────────────────────────────────────────────
+
+/// On-chain computed state of a proposal.
+/// Encoded as u8 (0–4) when returned from `get_proposal_state` view.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Debug)]
+pub enum ProposalState {
+    Pending   = 0,
+    Active    = 1,
+    Succeeded = 2,
+    Defeated  = 3,
+    Executed  = 4,
+}
+
+/// Pure function: derive the current state of a proposal.
+///
+/// Applies KRN-03 (participation ≥ 4%) BEFORE the quorum check (51%).
+/// A proposal with participation < 4% is `Defeated` regardless of for_pct.
+pub fn proposal_state(proposal: &Proposal, now: i64) -> ProposalState {
+    if proposal.executed {
+        return ProposalState::Executed;
+    }
+    if now < proposal.start_time {
+        return ProposalState::Pending;
+    }
+    if now <= proposal.end_time {
+        return ProposalState::Active;
+    }
+    // Voting window closed.
+    let total_votes = proposal
+        .for_votes
+        .saturating_add(proposal.against_votes);
+    if total_votes == 0 {
+        return ProposalState::Defeated;
+    }
+    // KRN-03: participation = total_votes * 100 / total_mana_at_creation.
+    // Avoid division by zero (total_mana_at_creation is always > 0 for valid proposals).
+    let total_mana = proposal.total_mana_at_creation.max(1) as u128;
+    let participation = (total_votes as u128).saturating_mul(100) / total_mana;
+    if participation < 4 {
+        return ProposalState::Defeated;
+    }
+    // Quorum: for_votes ≥ 51% of total_votes.
+    let for_pct = (proposal.for_votes as u128).saturating_mul(100) / total_votes as u128;
+    if for_pct >= 51 {
+        ProposalState::Succeeded
+    } else {
+        ProposalState::Defeated
+    }
 }
