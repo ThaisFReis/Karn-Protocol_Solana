@@ -20,3 +20,12 @@ test-ledger
 deployments/*.json
 !deployments/.gitkeep
 
+# Next.js
+.next/
+next-env.d.ts
+
+# Build artifacts
+dist/
+*.tgz
+*.tsbuildinfo
+
