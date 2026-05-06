@@ -289,7 +289,35 @@ Doc: [`docs/modules/M12.md`](docs/modules/M12.md)
 
 Doc: [`docs/modules/M13.md`](docs/modules/M13.md)
 
-### M14..M18 — ⏳ Pendentes
+### M14 — ✅ Concluído — Voting + Execution + Cross-Program Auth (2026-05-02)
+
+Instruções: `cast_vote`, `get_proposal_state`, `execute`.
+
+- KRN-02: mana snapshotada em `creation_time` (não `now`) dentro de `cast_vote`.
+- KRN-03: `participation < 4%` → `Defeated` antes de checar quorum (51%).
+- DT-05: Governor Config PDA assina CPIs via `seeds=[GOVERNOR_CONFIG, &[bump]]`.
+- DT-06: reentrancy guard via `GovernorConfigPda.locked`.
+- 14 testes Bankrun: 12 em `tests/governor/cast_vote.spec.ts` + 1 KRN-02 + 1 KRN-03.
+- Total acumulado: 79 testes passando.
+
+Doc: [`docs/modules/M14.md`](docs/modules/M14.md)
+
+### M15 — ✅ Concluído — TypeScript SDK (Thin Clients + calculateMana)
+
+**Data:** 2026-05-02
+
+**Entregáveis:**
+- Pacote `@karn_lat/protocol-sdk-solana@0.1.0-alpha.1` em `sdk/`
+- `ValocracyClient`, `GovernorClient`, `TreasuryClient` — thin wrappers sobre Program Anchor
+- `calculateMana` / `calculateManaFromStats` — espelho exato da fórmula Rust DT-10 D2
+- `buildSelfRegisterPayload`, `buildEd25519PreInstruction`, `buildSelfRegisterAccounts` — helpers para tx de registro
+- `buildExecuteRemainingAccounts` — resolve `remaining_accounts` por variante de `ProposalAction` (10 variantes)
+- PDA helpers em `seeds.ts` (17 derivações), tipos IDL re-exportados, constantes
+- `sdk/tests/mana.spec.ts` — 17 testes com fixtures cruzadas Rust↔TypeScript; `tsc --noEmit` verde
+
+Doc: [`docs/modules/M15.md`](docs/modules/M15.md)
+
+### M16..M18 — ⏳ Pendentes
 
 Ver PRD §3 e cronograma §4.
 

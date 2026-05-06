@@ -41,12 +41,63 @@ Esta versão Solana/Anchor é uma segunda implementação **em paralelo** à ver
 # build dos 3 programas
 anchor build
 
-# testes (Bankrun)
-anchor test
+# testes Rust
+cargo test --workspace
+
+# testes de integração (Bankrun)
+npm test
 
 # deploy em devnet (após `solana airdrop` na sua keypair)
 anchor deploy --provider.cluster devnet
 ```
+
+### Bootstrap de devnet
+
+O deploy script em [`migrations/deploy.ts`](migrations/deploy.ts) agora faz o seed operacional de devnet:
+
+- inicializa `valocracy`, `governor` e `treasury`
+- cria ou reutiliza o `asset_mint`
+- popula 5 `Valor`
+- registra 1 `Guardian`
+- registra 1 `CreditAuthority`
+- minta 1 badge de liderança para o membro de demo
+- cria 1 `Lab` de scholarship
+- faz o handoff final de `valocracy` e `treasury` para `gov_config`
+- escreve snapshot em `deployments/devnet.json`
+
+Variáveis úteis:
+
+- `KARN_ASSET_MINT`: reutiliza um mint SPL existente em vez de criar um novo
+- `KARN_BACKEND_SIGNER`: pubkey usada em `Config.signer`
+- `KARN_GUARDIAN`: pubkey do Guardian seeded
+- `KARN_CREDIT_AUTHORITY`: pubkey da CreditAuthority seeded
+- `KARN_DEMO_MEMBER`: pubkey que recebe o badge de liderança de demo
+
+### CLI demo
+
+```bash
+/home/dalekthai/.nvm/versions/node/v24.14.1/bin/node /home/dalekthai/.nvm/versions/node/v24.14.1/bin/npm run demo:devnet
+```
+
+O script em [`scripts/demo.ts`](scripts/demo.ts) consome `deployments/devnet.json` e executa o fluxo real disponível hoje:
+
+- funding do newcomer
+- `self_register`
+- `guardian_mint` de badge Tech
+- criação de proposta para `TreasuryApproveScholarship`
+- continuação automática para `vote`, `execute` e `withdraw` quando a janela temporal do Governor já estiver aberta/encerrada
+
+Limitação atual do fluxo RPC:
+
+- com os defaults atuais do Governor, `voting_delay = 1 dia` e `voting_period = 7 dias`
+- então um fluxo completo `propose -> vote -> execute` não fecha na mesma sessão devnet sem fast-forward de clock ou parâmetros menores
+- o script detecta isso e imprime os timestamps exatos de abertura e encerramento
+
+Observação operacional:
+
+- o deploy ainda usa uma wallet humana só durante o bootstrap
+- ao final do seed, `valocracy.governor` e `treasury.governor` são rotacionados on-chain para `gov_config`
+- `valocracy.treasury` passa a apontar para a `TreasuryState` PDA, não para o program id
 
 ---
 
@@ -61,7 +112,7 @@ anchor deploy --provider.cluster devnet
 │   └── karn-shared/       # types, seeds, math (lib crate)
 ├── tests/                 # Bankrun + integration
 ├── migrations/            # deploy scripts
-├── app/                   # frontend stub (stretch goal — Module 17)
+├── sdk/                   # thin TypeScript clients + helpers
 └── target/                # build artifacts (ignored)
 ```
 
@@ -69,9 +120,29 @@ anchor deploy --provider.cluster devnet
 
 ## Status
 
-Primeira implementação. Ver o **PRD em `docs/solana/PRD.md`** no repo Stellar para roadmap completo (18 módulos, 7 fases, cronograma de 10 dias).
+Primeira implementação funcional do protocolo Solana/Anchor. O roadmap canônico está em [`docs/PRD.md`](docs/PRD.md).
 
-**Módulo atual:** M1 — Workspace + Tooling.
+- **Entregue:** M1–M16 (core protocol + SDK + camada React, incluindo `mint_community`)
+- **Pendente:** M17 (demo dApp), agora scaffoldado em `app/` mas ainda não validado em runtime neste checkout
+- **Entregue:** M18 (deploy reproduzível, harness CLI e handoff final de autoridade para governança on-chain)
+
+### Demo dApp scaffold
+
+O diretório [`app/`](app/) agora contém um scaffold Next.js para o M17:
+
+- painel de conexão de wallet
+- `/api/sign-register`
+- perfil com `self_register` + Mana
+- painel de propostas
+- painel de treasury/labs
+
+Validação já feita:
+
+- dependências instaladas em `app/`
+- `tsc --noEmit` verde
+- `next build` verde
+
+Ainda falta a validação manual real com wallet de navegador em devnet.
 
 ---
 
