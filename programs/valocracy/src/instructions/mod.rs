@@ -13,6 +13,7 @@ pub mod get_votes_at;
 pub mod guardian_mint;
 pub mod initialize;
 pub mod mint;
+pub mod mint_community;
 pub mod pause_credit;
 pub mod remove_guardian;
 pub mod resume_credit;
@@ -23,7 +24,9 @@ pub mod revoke;
 pub mod set_guardian_tracks;
 pub mod set_valor;
 pub mod set_verified;
+pub mod update_governor;
 pub mod update_primary;
+pub mod update_treasury;
 
 #[allow(ambiguous_glob_reexports)]
 pub use credit_activity::*;
@@ -37,6 +40,8 @@ pub use guardian_mint::*;
 pub use initialize::*;
 #[allow(ambiguous_glob_reexports)]
 pub use mint::*;
+#[allow(ambiguous_glob_reexports)]
+pub use mint_community::*;
 #[allow(ambiguous_glob_reexports)]
 pub use pause_credit::*;
 #[allow(ambiguous_glob_reexports)]
@@ -58,4 +63,8 @@ pub use set_valor::*;
 #[allow(ambiguous_glob_reexports)]
 pub use set_verified::*;
 #[allow(ambiguous_glob_reexports)]
+pub use update_governor::*;
+#[allow(ambiguous_glob_reexports)]
 pub use update_primary::*;
+#[allow(ambiguous_glob_reexports)]
+pub use update_treasury::*;

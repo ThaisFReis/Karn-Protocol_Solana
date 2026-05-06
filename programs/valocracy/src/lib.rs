@@ -63,6 +63,16 @@ pub mod valocracy {
         instructions::mint::handler(ctx, valor_id, token_id)
     }
 
+    /// Mint a Community badge when the caller is already a member with
+    /// non-zero credential level.
+    pub fn mint_community<'info>(
+        ctx: Context<'_, '_, '_, 'info, MintCommunity<'info>>,
+        valor_id: u64,
+        token_id: u64,
+    ) -> Result<()> {
+        instructions::mint_community::handler(ctx, valor_id, token_id)
+    }
+
     /// Mint a Track badge via a domain-scoped Guardian. KRN-05 dual-auth +
     /// `guardian != account` enforced (CONFIG.md Rule 5).
     pub fn guardian_mint(ctx: Context<GuardianMint>, valor_id: u64, token_id: u64) -> Result<()> {
@@ -146,6 +156,16 @@ pub mod valocracy {
         verified: bool,
     ) -> Result<()> {
         instructions::set_verified::handler(ctx, member, verified)
+    }
+
+    /// Rotate the governor authority stored in the singleton config.
+    pub fn update_governor(ctx: Context<UpdateGovernor>, new_governor: Pubkey) -> Result<()> {
+        instructions::update_governor::handler(ctx, new_governor)
+    }
+
+    /// Update the treasury reference stored in the singleton config.
+    pub fn update_treasury(ctx: Context<UpdateTreasury>, new_treasury: Pubkey) -> Result<()> {
+        instructions::update_treasury::handler(ctx, new_treasury)
     }
 
     /// Set the primary track and valor for `account` (Governor-only).
