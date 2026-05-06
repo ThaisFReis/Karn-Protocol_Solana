@@ -34,6 +34,11 @@ pub mod treasury {
         instructions::transfer::handler(ctx, amount)
     }
 
+    /// Rotate the treasury governor authority.
+    pub fn update_governor(ctx: Context<UpdateGovernor>, new_governor: Pubkey) -> Result<()> {
+        instructions::update_governor::handler(ctx, new_governor)
+    }
+
     /// Funder deposits tokens, creating a scholarship Lab PDA (KRN-01).
     pub fn fund_lab(ctx: Context<FundLab>, total_amount: u64, scholarship_per_member: u64) -> Result<()> {
         instructions::fund_lab::handler(ctx, total_amount, scholarship_per_member)
