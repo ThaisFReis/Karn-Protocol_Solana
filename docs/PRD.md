@@ -298,6 +298,7 @@ pub struct TokenValorId { pub valor_id: u64, pub bump: u8 }
 - Função `effective_rarity_for(account, valor)` aplicando regra primary/secondary
 - `set_guardian_tracks(guardian, track_ids)` (Governor-only)
 - `remove_guardian(guardian)` (Governor-only)
+- `set_valor(valor_id, rarity, secondary_rarity, track_id, metadata)` (Governor-only) — atualiza metadados de um `Valor` PDA já existente; necessário para corrigir taxonomia de badges via governança sem redeployar o programa
 
 ***Fluxo Técnico***
 1. Para `mint`: minter assina; programa lê `Valor(valor_id)` e classifica via `get_badge_category`
@@ -573,12 +574,14 @@ pub const VIRTUAL_ASSETS: u128 = 1;
 
 ***Entregáveis***
 - `programs/treasury/src/state.rs`, `instructions/initialize.rs`, `instructions/transfer.rs`
+- `instructions/update_governor.rs` — rotaciona `TreasuryState.governor` para novo endereço; Governor-only; independente do `update_governor` do Valocracy (cada programa mantém sua própria referência de autoridade para permitir upgrades modulares)
 - Helpers de vault math em `karn-shared/src/vault.rs`
 - 6 testes Bankrun: transfer ok via Governor, transfer não-governor falha, transfer > balance falha, reentrancy bloqueada, **KRN-01** (restricted excluído de total_assets), preview_withdraw correto
 
 ***Critério de Aceite***
 - `transfer(amount)` por wallet não-governor retorna `NotAuthorized`
 - `total_assets() == vault_ata_balance - restricted_reserves`
+- `update_governor` por wallet não-governor retorna `NotAuthorized`; após chamada válida, `TreasuryState.governor` reflete o novo endereço
 
 ---
 
