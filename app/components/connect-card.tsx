@@ -1,5 +1,7 @@
 "use client";
 
+import styles from "./karn.module.css";
+
 function shorten(address: string) {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }
@@ -12,41 +14,49 @@ interface ConnectCardProps {
 }
 
 export function ConnectCard({ connect, disconnect, label, publicKey }: ConnectCardProps) {
+  const detected = label !== "No wallet";
 
   return (
-    <div className="panel stack">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <div>
-          <h2>Connect</h2>
-          <p className="microcopy">
-            Browser wallet entrypoint for Phantom, Backpack or Solflare on devnet.
-          </p>
+    <aside className={styles.connectCard}>
+      <div>
+        <p className={styles.connectLabel}>Step 1</p>
+        <h3 className={styles.connectTitle}>Connect your wallet</h3>
+      </div>
+
+      <div className={styles.walletList}>
+        <div className={`${styles.walletRow} ${detected ? styles.walletRowActive : ""}`}>
+          <span>{detected ? label : "Phantom"}</span>
+          <span>{detected ? "Available" : "Not detected"}</span>
         </div>
-        <span className="wallet-chip">{label}</span>
+        <div className={`${styles.walletRow} ${styles.walletRowMuted}`}>
+          <span>Backpack</span>
+          <span>—</span>
+        </div>
+        <div className={`${styles.walletRow} ${styles.walletRowMuted}`}>
+          <span>Solflare</span>
+          <span>—</span>
+        </div>
       </div>
 
       {publicKey ? (
         <>
-          <div className="metric">
-            <span className="microcopy">Connected wallet</span>
-            <strong className="mono">{shorten(publicKey.toBase58())}</strong>
-          </div>
-          <button className="ghost" onClick={() => void disconnect()}>
+          <p className={styles.connectFootnote}>
+            Connected as <span style={{ fontFamily: "var(--font-mono)" }}>{shorten(publicKey.toBase58())}</span>
+          </p>
+          <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => void disconnect()}>
             Disconnect
           </button>
         </>
       ) : (
         <>
-          <div className="metric">
-            <span className="microcopy">
-              No wallet is connected. The dApp expects a browser provider compatible with Solana wallets.
-            </span>
-          </div>
-          <button className="cta" onClick={() => void connect()}>
+          <p className={styles.connectFootnote}>
+            Karn never sees your balance, your transactions, or any asset you hold. Only the public key is needed.
+          </p>
+          <button type="button" className={styles.btn} onClick={() => void connect()}>
             Connect Wallet
           </button>
         </>
       )}
-    </div>
+    </aside>
   );
 }

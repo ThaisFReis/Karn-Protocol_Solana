@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PublicKey } from "@solana/web3.js";
 
 import { useKarnSolana, useValocracy } from "@karn_lat/protocol-sdk-solana/react";
+
+import styles from "./karn.module.css";
+
+const VACANCY_PERIOD_DAYS = 180;
+const MEMBER_FLOOR = 5;
+
+function shorten(addr: string) {
+  return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
+}
 
 export function ProfilePanel() {
   const { publicKey, clients } = useKarnSolana();
@@ -20,6 +28,7 @@ export function ProfilePanel() {
     if (!publicKey) return;
     const timer = setInterval(() => void refresh(publicKey), 5000);
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [publicKey?.toBase58?.()]);
 
   const onRegister = async () => {
@@ -66,66 +75,215 @@ export function ProfilePanel() {
     }
   };
 
+  const isRegistered = stats !== null && stats !== undefined;
+  const manaNumber = mana ? Number(mana) : 0;
+  const credentialLevel = stats ? Number(stats.credentialLevel) : 0;
+  const earnedWeight = Math.max(credentialLevel - MEMBER_FLOOR, 0);
+
+  // Decay calculation — credential_expiry is unix seconds
+  let decayPct = 0;
+  let daysRemaining = 0;
+  if (stats && stats.credentialExpiry) {
+    const expiry = Number(stats.credentialExpiry);
+    const now = Math.floor(Date.now() / 1000);
+    const remaining = Math.max(0, expiry - now);
+    daysRemaining = Math.floor(remaining / 86400);
+    decayPct = Math.min(100, Math.round((remaining / (VACANCY_PERIOD_DAYS * 86400)) * 100));
+  }
+
   return (
-    <div className="panel stack-lg">
-      <div>
-        <h2>Profile</h2>
-        <p>
-          Register the current wallet, inspect on-chain `UserStats`, and watch Mana refresh every 5 seconds.
+    <article className={styles.panel}>
+      <header className={styles.panelHead}>
+        <div>
+          <h3 className={styles.panelHeadTitle}>{isRegistered ? "Your Profile" : "Profile · Not Registered"}</h3>
+        </div>
+        <div className={styles.panelHeadMeta}>
+          <span className={styles.techBadge}>
+            <span className={styles.techDot} />
+            {isRegistered ? "Active member" : "Connected · awaiting register"}
+          </span>
+          {publicKey ? <span className={styles.pubkey}>{shorten(publicKey.toBase58())}</span> : null}
+        </div>
+      </header>
+
+      {isRegistered ? (
+        <RegisteredView
+          manaNumber={manaNumber}
+          credentialLevel={credentialLevel}
+          earnedWeight={earnedWeight}
+          activityLevel={stats ? Number(stats.activityLevel) : 0}
+          primaryTrackId={stats?.primaryTrackId ? stats.primaryTrackId.toString() : null}
+          decayPct={decayPct}
+          daysRemaining={daysRemaining}
+          onRefresh={() => publicKey && void refresh(publicKey)}
+        />
+      ) : (
+        <RegisterForm
+          trackId={trackId}
+          setTrackId={setTrackId}
+          busy={busy}
+          canRegister={!!publicKey}
+          onRegister={() => void onRegister()}
+        />
+      )}
+
+      {message ? <FeedbackBox kind="ok" text={message} /> : null}
+      {error ? <FeedbackBox kind="err" text={error} /> : null}
+    </article>
+  );
+}
+
+function RegisteredView(props: {
+  manaNumber: number;
+  credentialLevel: number;
+  earnedWeight: number;
+  activityLevel: number;
+  primaryTrackId: string | null;
+  decayPct: number;
+  daysRemaining: number;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className={styles.panelGrid}>
+      <div className={styles.manaBlock}>
+        <p className={styles.manaLabel}>Voting power</p>
+        <p className={styles.manaNumber}>
+          {props.manaNumber}
+          <span className={styles.manaUnit}>mana.</span>
         </p>
-      </div>
-
-      <div className="field-grid three">
-        <div className="metric">
-          <span className="microcopy">Wallet</span>
-          <strong className="mono">
-            {publicKey ? `${publicKey.toBase58().slice(0, 4)}…${publicKey.toBase58().slice(-4)}` : "Disconnected"}
-          </strong>
-        </div>
-        <div className="metric">
-          <span className="microcopy">Credential Level</span>
-          <strong>{stats ? stats.credentialLevel.toString() : "0"}</strong>
-        </div>
-        <div className="metric">
-          <span className="microcopy">Mana</span>
-          <strong>{mana.toString()}</strong>
+        <p className={styles.manaPlain}>
+          <strong>Baseline ({MEMBER_FLOOR})</strong> plus {props.earnedWeight.toLocaleString()} from credited
+          contributions.
+        </p>
+        <div className={styles.decayWrap}>
+          <p className={styles.decayLabel}>{props.daysRemaining} days remaining</p>
+          <div className={styles.decayBar}>
+            <div className={styles.decayFill} style={{ width: `${props.decayPct}%` }} />
+          </div>
         </div>
       </div>
 
-      <div className="field-grid two">
-        <div className="metric">
-          <span className="microcopy">Primary Track</span>
-          <strong>{stats?.primaryTrackId?.toString?.() ?? "None"}</strong>
-        </div>
-        <div className="metric">
-          <span className="microcopy">Activity Level</span>
-          <strong>{stats ? stats.activityLevel.toString() : "0"}</strong>
-        </div>
-      </div>
+      <div>
+        <header className={styles.ledgerHead}>
+          <span>Component</span>
+          <span style={{ textAlign: "right" }}>Weight</span>
+          <span style={{ textAlign: "right" }}>State</span>
+        </header>
 
-      <div className="divider" />
-
-      <div className="stack">
-        <div className="field">
-          <label>Track Id For Register</label>
-          <input value={trackId} onChange={(e) => setTrackId(e.target.value)} />
+        <div className={styles.ledgerRow}>
+          <span className={styles.ledgerName}>
+            <span className={styles.ledgerNameLabel}>Member Floor</span>
+            <span className={styles.ledgerNameTrack}>Everyone gets this</span>
+          </span>
+          <span className={styles.ledgerWeight}>{MEMBER_FLOOR}</span>
+          <span className={`${styles.ledgerStatus} ${styles.active}`}>Active</span>
         </div>
-        <div className="row">
-          <button className="cta" disabled={!publicKey || busy} onClick={() => void onRegister()}>
-            {busy ? "Registering..." : "Register Wallet"}
+
+        <div className={styles.ledgerRow}>
+          <span className={styles.ledgerName}>
+            <span className={styles.ledgerNameLabel}>Credential Level</span>
+            <span className={styles.ledgerNameTrack}>
+              {props.primaryTrackId ? `Primary track · ${props.primaryTrackId}` : "From your contributions"}
+            </span>
+          </span>
+          <span className={styles.ledgerWeight}>{props.credentialLevel.toLocaleString()}</span>
+          <span className={`${styles.ledgerStatus} ${props.decayPct > 50 ? styles.active : styles.decaying}`}>
+            {props.decayPct > 50 ? "Active" : "Cooling"}
+          </span>
+        </div>
+
+        <div className={styles.ledgerRow}>
+          <span className={styles.ledgerName}>
+            <span className={styles.ledgerNameLabel}>Activity Level</span>
+            <span className={styles.ledgerNameTrack}>From recent credits</span>
+          </span>
+          <span className={styles.ledgerWeight}>{props.activityLevel.toLocaleString()}</span>
+          <span className={`${styles.ledgerStatus} ${props.activityLevel > 0 ? styles.active : styles.decaying}`}>
+            {props.activityLevel > 0 ? "Active" : "Idle"}
+          </span>
+        </div>
+
+        <div style={{ marginTop: 24 }}>
+          <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={props.onRefresh}>
+            Refresh
           </button>
-          <button className="ghost" disabled={!publicKey} onClick={() => void refresh(publicKey)}>
-            Refresh Stats
-          </button>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {message ? <div className="success-box">{message}</div> : null}
-      {error ? <div className="error-box">{error}</div> : null}
-
-      <p className="footer-note">
-        The API route signs the registration payload server-side. This is devnet bootstrap behavior, not a production custody model.
+function RegisterForm(props: {
+  trackId: string;
+  setTrackId: (v: string) => void;
+  busy: boolean;
+  canRegister: boolean;
+  onRegister: () => void;
+}) {
+  return (
+    <div style={{ display: "grid", gap: 24, maxWidth: 560 }}>
+      <p className={styles.manaPlain} style={{ maxWidth: "60ch" }}>
+        Register this wallet to receive your <strong>baseline voice (5 mana)</strong> plus any contributions
+        the protocol has credited to it. Registration is a single signed transaction.
       </p>
+
+      <label
+        style={{
+          display: "grid",
+          gap: 8,
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          color: "var(--mute)",
+        }}
+      >
+        Primary track id
+        <input
+          value={props.trackId}
+          onChange={(e) => props.setTrackId(e.target.value)}
+          style={{
+            border: "2px solid var(--ink)",
+            background: "var(--paper)",
+            padding: "12px 14px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 14,
+            letterSpacing: "0.04em",
+            color: "var(--ink)",
+            outline: "none",
+          }}
+        />
+      </label>
+
+      <button
+        type="button"
+        className={styles.btn}
+        disabled={!props.canRegister || props.busy}
+        onClick={props.onRegister}
+        style={{ opacity: !props.canRegister || props.busy ? 0.5 : 1 }}
+      >
+        {props.busy ? "Registering…" : "Register wallet"}
+      </button>
+    </div>
+  );
+}
+
+function FeedbackBox({ kind, text }: { kind: "ok" | "err"; text: string }) {
+  const color = kind === "ok" ? "var(--teal)" : "var(--rose)";
+  return (
+    <div
+      style={{
+        marginTop: 24,
+        padding: "12px 16px",
+        border: `2px solid ${color}`,
+        color,
+        fontFamily: "var(--font-mono)",
+        fontSize: 12,
+        letterSpacing: "0.04em",
+      }}
+    >
+      {text}
     </div>
   );
 }

@@ -6,12 +6,24 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useGovernor } from "@karn_lat/protocol-sdk-solana/react";
 
+import styles from "./karn.module.css";
+
 type ActionKind =
   | "pause_credit"
   | "resume_credit"
   | "treasury_transfer"
   | "fund_lab"
   | "approve_scholarship";
+
+type LoadedProposal = {
+  id: number;
+  proposal: {
+    description: string;
+    forVotes: { toString(): string };
+    againstVotes: { toString(): string };
+  };
+  state: string;
+};
 
 function buildAction(kind: ActionKind, fields: Record<string, string>) {
   switch (kind) {
@@ -22,7 +34,7 @@ function buildAction(kind: ActionKind, fields: Record<string, string>) {
     case "treasury_transfer":
       return {
         treasuryTransfer: {
-          receiver: new PublicKey(fields.receiver),
+          receiver: fields.receiver ? new PublicKey(fields.receiver) : PublicKey.default,
           amount: new anchor.BN(fields.amount || "0"),
         },
       } as any;
@@ -37,10 +49,20 @@ function buildAction(kind: ActionKind, fields: Record<string, string>) {
       return {
         treasuryApproveScholarship: {
           labId: Number(fields.labId || "0"),
-          member: new PublicKey(fields.member),
+          member: fields.member ? new PublicKey(fields.member) : PublicKey.default,
         },
       } as any;
   }
+}
+
+function stateClass(state: string) {
+  const s = state.toLowerCase();
+  if (s.includes("pending")) return styles.proposalStatePending;
+  if (s.includes("active")) return styles.proposalStateActive;
+  if (s.includes("succeed")) return styles.proposalStateSucceeded;
+  if (s.includes("defeat")) return styles.proposalStateDefeated;
+  if (s.includes("executed")) return styles.proposalStateExecuted;
+  return "";
 }
 
 export function ProposalsPanel() {
@@ -60,11 +82,11 @@ export function ProposalsPanel() {
   const [proposalId, setProposalId] = useState("0");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState<any[]>([]);
+  const [loaded, setLoaded] = useState<LoadedProposal[]>([]);
 
   useEffect(() => {
     void refresh();
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     const load = async () => {
@@ -82,10 +104,11 @@ export function ProposalsPanel() {
           };
         }),
       );
-      setLoaded(proposals.filter(Boolean) as any[]);
+      setLoaded(proposals.filter(Boolean) as LoadedProposal[]);
     };
 
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config?.proposalCount?.toString?.()]);
 
   const action = useMemo(() => buildAction(actionKind, fields), [actionKind, fields]);
@@ -120,12 +143,13 @@ export function ProposalsPanel() {
       await execute({
         proposalId: BigInt(proposalId),
         action,
-        extraAccounts: fields.receiverAta && fields.vaultAta
-          ? {
-              receiverAta: new PublicKey(fields.receiverAta),
-              vaultAta: new PublicKey(fields.vaultAta),
-            }
-          : undefined,
+        extraAccounts:
+          fields.receiverAta && fields.vaultAta
+            ? {
+                receiverAta: new PublicKey(fields.receiverAta),
+                vaultAta: new PublicKey(fields.vaultAta),
+              }
+            : undefined,
       });
       setStatusMessage("Execute submitted.");
     } catch (err) {
@@ -133,106 +157,179 @@ export function ProposalsPanel() {
     }
   };
 
+  const proposalCount = config ? Number(config.proposalCount.toString()) : 0;
+
   return (
-    <div className="panel stack-lg">
-      <div>
-        <h2>Governance</h2>
-        <p>
-          Create, inspect, vote and execute proposals using the Governor program and the React hooks from M16.
-        </p>
-      </div>
-
-      <div className="proposal-list">
-        {loaded.length ? loaded.map(({ id, proposal, state }) => (
-          <div className="proposal-item" key={id}>
-            <strong>Proposal #{id}</strong>
-            <div className="row">
-              <span className="tag accent">{state}</span>
-              <span className="tag">For {proposal.forVotes.toString()}</span>
-              <span className="tag">Against {proposal.againstVotes.toString()}</span>
-            </div>
-            <p>{proposal.description}</p>
-          </div>
-        )) : (
-          <div className="metric">
-            <span className="microcopy">No proposals loaded yet.</span>
-          </div>
-        )}
-      </div>
-
-      <div className="divider" />
-
-      <div className="field-grid">
-        <div className="field">
-          <label>Description</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+    <article className={styles.panel}>
+      <header className={styles.panelHead}>
+        <div>
+          <h3 className={styles.panelHeadTitle}>Governance</h3>
         </div>
-        <div className="field-grid two">
-          <div className="field">
-            <label>Action Variant</label>
-            <select value={actionKind} onChange={(e) => setActionKind(e.target.value as ActionKind)}>
+        <div className={styles.panelHeadMeta}>
+          <span className={styles.techBadge}>
+            <span className={styles.techDot} />
+            {proposalCount} proposal{proposalCount === 1 ? "" : "s"}
+          </span>
+        </div>
+      </header>
+
+      {/* List */}
+      {loaded.length ? (
+        <div>
+          {loaded.map(({ id, proposal, state }) => {
+            const fv = Number(proposal.forVotes.toString());
+            const av = Number(proposal.againstVotes.toString());
+            const total = fv + av;
+            const forPct = total ? (fv / total) * 100 : 0;
+            const againstPct = total ? (av / total) * 100 : 0;
+            return (
+              <div className={styles.proposalRow} key={id}>
+                <span className={styles.proposalIdx}>#{id}</span>
+                <div className={styles.proposalBody}>
+                  <h4>Proposal {id}</h4>
+                  <p>{proposal.description}</p>
+                </div>
+                <div className={styles.proposalRowVotes}>
+                  <div className={styles.voteCounts}>
+                    <span className="for">For {fv}</span>
+                    <span className="against">Against {av}</span>
+                  </div>
+                  <div className={styles.voteBar}>
+                    <div className={styles.voteBarFor} style={{ width: `${forPct}%` }} />
+                    <div className={styles.voteBarAgainst} style={{ width: `${againstPct}%` }} />
+                  </div>
+                </div>
+                <span className={`${styles.proposalState} ${stateClass(state)}`}>{state}</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className={styles.emptyHint}>No proposals yet. Create the first one below.</div>
+      )}
+
+      <div className={styles.subdivider} />
+
+      {/* Compose */}
+      <div className={styles.fieldStack}>
+        <label className={styles.fieldLabel}>
+          Description
+          <textarea
+            className={styles.fieldTextarea}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </label>
+
+        <div className={`${styles.fieldRow} ${styles.fieldRowTwo}`}>
+          <label className={styles.fieldLabel}>
+            Action variant
+            <select
+              className={styles.fieldSelect}
+              value={actionKind}
+              onChange={(e) => setActionKind(e.target.value as ActionKind)}
+            >
               <option value="pause_credit">ValocracyPauseCredit</option>
               <option value="resume_credit">ValocracyResumeCredit</option>
               <option value="treasury_transfer">TreasuryTransfer</option>
               <option value="fund_lab">TreasuryFundLab</option>
               <option value="approve_scholarship">TreasuryApproveScholarship</option>
             </select>
-          </div>
-          <div className="field">
-            <label>Proposal Id</label>
-            <input value={proposalId} onChange={(e) => setProposalId(e.target.value)} />
-          </div>
+          </label>
+
+          <label className={styles.fieldLabel}>
+            Proposal id (vote / execute)
+            <input
+              className={styles.fieldInput}
+              value={proposalId}
+              onChange={(e) => setProposalId(e.target.value)}
+            />
+          </label>
         </div>
 
         {actionKind === "treasury_transfer" ? (
-          <div className="field-grid two">
-            <div className="field">
-              <label>Receiver</label>
-              <input value={fields.receiver} onChange={(e) => setFields((s) => ({ ...s, receiver: e.target.value }))} />
-            </div>
-            <div className="field">
-              <label>Amount</label>
-              <input value={fields.amount} onChange={(e) => setFields((s) => ({ ...s, amount: e.target.value }))} />
-            </div>
+          <div className={`${styles.fieldRow} ${styles.fieldRowTwo}`}>
+            <label className={styles.fieldLabel}>
+              Receiver
+              <input
+                className={styles.fieldInput}
+                value={fields.receiver}
+                onChange={(e) => setFields((s) => ({ ...s, receiver: e.target.value }))}
+              />
+            </label>
+            <label className={styles.fieldLabel}>
+              Amount
+              <input
+                className={styles.fieldInput}
+                value={fields.amount}
+                onChange={(e) => setFields((s) => ({ ...s, amount: e.target.value }))}
+              />
+            </label>
           </div>
         ) : null}
 
         {actionKind === "fund_lab" ? (
-          <div className="field-grid two">
-            <div className="field">
-              <label>Total Amount</label>
-              <input value={fields.totalAmount} onChange={(e) => setFields((s) => ({ ...s, totalAmount: e.target.value }))} />
-            </div>
-            <div className="field">
-              <label>Scholarship Per Member</label>
-              <input value={fields.scholarshipPerMember} onChange={(e) => setFields((s) => ({ ...s, scholarshipPerMember: e.target.value }))} />
-            </div>
+          <div className={`${styles.fieldRow} ${styles.fieldRowTwo}`}>
+            <label className={styles.fieldLabel}>
+              Total amount
+              <input
+                className={styles.fieldInput}
+                value={fields.totalAmount}
+                onChange={(e) => setFields((s) => ({ ...s, totalAmount: e.target.value }))}
+              />
+            </label>
+            <label className={styles.fieldLabel}>
+              Per member
+              <input
+                className={styles.fieldInput}
+                value={fields.scholarshipPerMember}
+                onChange={(e) =>
+                  setFields((s) => ({ ...s, scholarshipPerMember: e.target.value }))
+                }
+              />
+            </label>
           </div>
         ) : null}
 
         {actionKind === "approve_scholarship" ? (
-          <div className="field-grid two">
-            <div className="field">
-              <label>Lab Id</label>
-              <input value={fields.labId} onChange={(e) => setFields((s) => ({ ...s, labId: e.target.value }))} />
-            </div>
-            <div className="field">
-              <label>Member</label>
-              <input value={fields.member} onChange={(e) => setFields((s) => ({ ...s, member: e.target.value }))} />
-            </div>
+          <div className={`${styles.fieldRow} ${styles.fieldRowTwo}`}>
+            <label className={styles.fieldLabel}>
+              Lab id
+              <input
+                className={styles.fieldInput}
+                value={fields.labId}
+                onChange={(e) => setFields((s) => ({ ...s, labId: e.target.value }))}
+              />
+            </label>
+            <label className={styles.fieldLabel}>
+              Member
+              <input
+                className={styles.fieldInput}
+                value={fields.member}
+                onChange={(e) => setFields((s) => ({ ...s, member: e.target.value }))}
+              />
+            </label>
           </div>
         ) : null}
+
+        <div className={styles.btnRow}>
+          <button type="button" className={styles.btn} onClick={() => void onCreate()}>
+            Create proposal
+          </button>
+          <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => void onVote(true)}>
+            Vote for
+          </button>
+          <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => void onVote(false)}>
+            Vote against
+          </button>
+          <button type="button" className={`${styles.btn} ${styles.btnDanger}`} onClick={() => void onExecute()}>
+            Execute
+          </button>
+        </div>
       </div>
 
-      <div className="row">
-        <button className="cta" onClick={() => void onCreate()}>Create Proposal</button>
-        <button className="ghost" onClick={() => void onVote(true)}>Vote For</button>
-        <button className="ghost" onClick={() => void onVote(false)}>Vote Against</button>
-        <button className="danger" onClick={() => void onExecute()}>Execute</button>
-      </div>
-
-      {statusMessage ? <div className="success-box">{statusMessage}</div> : null}
-      {error ? <div className="error-box">{error}</div> : null}
-    </div>
+      {statusMessage ? <div className={styles.feedbackOk}>{statusMessage}</div> : null}
+      {error ? <div className={styles.feedbackErr}>{error}</div> : null}
+    </article>
   );
 }

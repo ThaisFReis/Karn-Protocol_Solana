@@ -1,14 +1,31 @@
-"use client";
-
-import { ConnectCard } from "@/components/connect-card";
+import { Inter, JetBrains_Mono, Lora } from "next/font/google";
 import { Header } from "@/components/header";
-import { ProfilePanel } from "@/components/profile-panel";
-import { ProposalsPanel } from "@/components/proposals-panel";
-import { DemoProviders } from "@/components/providers";
-import { TreasuryPanel } from "@/components/treasury-panel";
-import { useBrowserWallet } from "@/lib/browser-wallet";
+import styles from "@/components/karn.module.css";
 
-import styles from "./karn.module.css";
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-sans",
+});
+
+const lora = Lora({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["italic", "normal"],
+  variable: "--font-serif",
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-mono",
+});
+
+export const metadata = {
+  title: "Karn Protocol Solana — Demo",
+};
+
+const TOTAL_SECTIONS = 5;
 
 const STEPS = [
   {
@@ -17,8 +34,7 @@ const STEPS = [
   },
   {
     title: "Everyone has a voice.",
-    plain:
-      "Every member starts with a baseline. Contributing makes it louder. Inactivity softens it, but never to zero.",
+    plain: "Every member starts with a baseline. Contributing makes it louder. Inactivity softens it, but never to zero.",
   },
   {
     title: "No admins. No backdoors.",
@@ -26,41 +42,54 @@ const STEPS = [
   },
 ];
 
-const SAMPLE_BADGES = [
+const BADGES = [
   { name: "Leadership", track: "Granted at genesis", weight: 2000, status: "active" as const },
   { name: "Tech Contributor", track: "From a verified contribution", weight: 1000, status: "active" as const },
   { name: "Governance Voter", track: "From past proposals", weight: 250, status: "decaying" as const },
   { name: "Member Floor", track: "Everyone gets this", weight: 5, status: "active" as const },
 ];
 
-export function DemoShell() {
-  const { wallet, connect, disconnect, label, publicKey } = useBrowserWallet();
-
+export default function PreviewPage() {
   return (
-    <div className={styles.root}>
+    <div className={[styles.root, inter.variable, lora.variable, mono.variable].join(" ")}>
       <Header />
-      <div className={styles.shell}>
-        <Hero connect={connect} disconnect={disconnect} label={label} publicKey={publicKey} />
+      <div className={styles.shell} style={{ fontFamily: "var(--font-sans)" }}>
+        <Hero />
         <WhatIsKarn />
         <HowItWorks />
-        <SeeItLive wallet={wallet} />
+        <SeeItLive />
         <Closing />
       </div>
     </div>
   );
 }
 
+function SectionIndex({ n }: { n: number }) {
+  return (
+    <span className={styles.snapIndex}>
+      0{n} / 0{TOTAL_SECTIONS}
+    </span>
+  );
+}
+
+function ScrollHint() {
+  return (
+    <span className={styles.scrollHint} aria-hidden>
+      <span className={styles.scrollLine} />
+      <span>Scroll</span>
+      <span className={styles.scrollLine} />
+    </span>
+  );
+}
+
 /* ─────────────────────────────────────────── HERO */
 
-function Hero(props: {
-  connect: () => Promise<void>;
-  disconnect: () => Promise<void>;
-  label: string;
-  publicKey: { toBase58(): string } | null;
-}) {
+function Hero() {
   return (
     <section id="hero" className={`${styles.snap} ${styles.hero}`}>
       <div className={styles.heroDots} aria-hidden />
+      <SectionIndex n={1} />
+
       <div className={styles.heroGrid}>
         <div>
           <p className={styles.heroIntro}>Karn Protocol · Solana Devnet</p>
@@ -77,13 +106,49 @@ function Hero(props: {
           </p>
 
           <div className={styles.ctaRow}>
-            <span className={styles.ctaHint}>Scroll · 4 sections</span>
+            <BrutalButton>
+              Connect Wallet <Arrow />
+            </BrutalButton>
+            <span className={styles.ctaHint}>or scroll · 4 sections</span>
           </div>
         </div>
 
-        <ConnectCard {...props} />
+        <ConnectCardMock />
       </div>
+
+      <ScrollHint />
     </section>
+  );
+}
+
+function ConnectCardMock() {
+  return (
+    <aside className={styles.connectCard}>
+      <div>
+        <p className={styles.connectLabel}>Step 1</p>
+        <h3 className={styles.connectTitle}>Connect your wallet</h3>
+      </div>
+
+      <div className={styles.walletList}>
+        <div className={`${styles.walletRow} ${styles.walletRowActive}`}>
+          <span>Phantom</span>
+          <span>Available</span>
+        </div>
+        <div className={styles.walletRow}>
+          <span>Backpack</span>
+          <span>Available</span>
+        </div>
+        <div className={`${styles.walletRow} ${styles.walletRowMuted}`}>
+          <span>Solflare</span>
+          <span>Not detected</span>
+        </div>
+      </div>
+
+      <p className={styles.connectFootnote}>
+        Karn never sees your balance, your transactions, or any asset you hold. We only need to know that
+        this wallet is yours.
+      </p>
+    </aside>
   );
 }
 
@@ -92,6 +157,7 @@ function Hero(props: {
 function WhatIsKarn() {
   return (
     <section id="what" className={`${styles.snap} ${styles.section}`}>
+      <SectionIndex n={2} />
       <p className={styles.sectionLabel}>What this is</p>
       <h2 className={styles.sectionTitle}>A primitive for governance, not a token.</h2>
 
@@ -99,8 +165,8 @@ function WhatIsKarn() {
         <div className={styles.explainBody}>
           <p>
             When a DAO votes by token balance, whoever has the most money decides everything. <strong>Karn
-            counts credentials, not tokens.</strong> They can&rsquo;t be bought, rented, or lent for a single
-            block.
+            counts credentials, not tokens.</strong> They can&rsquo;t be bought, rented, or lent for a
+            single block.
           </p>
         </div>
 
@@ -121,6 +187,7 @@ function WhatIsKarn() {
 function HowItWorks() {
   return (
     <section id="how" className={`${styles.snap} ${styles.section}`}>
+      <SectionIndex n={3} />
       <p className={styles.sectionLabel}>How it works</p>
       <h2 className={styles.sectionTitle}>Three protections, working together.</h2>
 
@@ -141,28 +208,19 @@ function HowItWorks() {
 
 /* ─────────────────────────────────────────── SEE IT LIVE */
 
-function SeeItLive({ wallet }: { wallet: { publicKey: unknown } | null }) {
+function SeeItLive() {
   return (
     <section id="live" className={`${styles.snap} ${styles.section}`}>
+      <SectionIndex n={4} />
       <p className={styles.sectionLabel}>See it live</p>
       <h2 className={styles.sectionTitle}>This is real, on-chain, right now.</h2>
 
-      {wallet?.publicKey ? (
-        <DemoProviders wallet={wallet as never}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24 }}>
-            <ProfilePanel />
-            <ProposalsPanel />
-            <TreasuryPanel />
-          </div>
-        </DemoProviders>
-      ) : (
-        <SampleProfilePanel />
-      )}
+      <ProfilePanelMock />
     </section>
   );
 }
 
-function SampleProfilePanel() {
+function ProfilePanelMock() {
   const score = 73;
   const decayPct = 64;
 
@@ -171,10 +229,10 @@ function SampleProfilePanel() {
       <header className={styles.panelHead}>
         <h3 className={styles.panelHeadTitle}>Sample Member</h3>
         <div className={styles.panelHeadMeta}>
-          <span className={styles.techBadge}>
+          <TechBadge>
             <span className={styles.techDot} />
             Active member
-          </span>
+          </TechBadge>
           <span className={styles.pubkey}>A6Xs…iKGj</span>
         </div>
       </header>
@@ -182,13 +240,16 @@ function SampleProfilePanel() {
       <div className={styles.panelGrid}>
         <div className={styles.manaBlock}>
           <p className={styles.manaLabel}>Voting power</p>
+
           <p className={styles.manaNumber}>
             {score}
             <span className={styles.manaUnit}>mana.</span>
           </p>
+
           <p className={styles.manaPlain}>
             <strong>Baseline (5)</strong> plus the weight of credited contributions.
           </p>
+
           <div className={styles.decayWrap}>
             <p className={styles.decayLabel}>180 days remaining</p>
             <div className={styles.decayBar}>
@@ -203,7 +264,7 @@ function SampleProfilePanel() {
             <span style={{ textAlign: "right" }}>Weight</span>
             <span style={{ textAlign: "right" }}>State</span>
           </header>
-          {SAMPLE_BADGES.map((b) => (
+          {BADGES.map((b) => (
             <div className={styles.ledgerRow} key={b.name}>
               <span className={styles.ledgerName}>
                 <span className={styles.ledgerNameLabel}>{b.name}</span>
@@ -221,7 +282,7 @@ function SampleProfilePanel() {
   );
 }
 
-/* ─────────────────────────────────────────── CLOSING / FOOTER */
+/* ─────────────────────────────────────────── CLOSING */
 
 function Closing() {
   return (
@@ -266,7 +327,6 @@ function Closing() {
 
         <div className={styles.closingBottom}>
           <div className={styles.closingMark}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo_karn.svg" alt="" />
             <span className={styles.closingMarkText}>KARN.</span>
           </div>
@@ -280,7 +340,26 @@ function Closing() {
   );
 }
 
-/* ─────────────────────────────────────────── ICONS */
+/* ─────────────────────────────────────────── PRIMITIVES */
+
+function TechBadge({ children }: { children: React.ReactNode }) {
+  return <span className={styles.techBadge}>{children}</span>;
+}
+
+function BrutalButton({
+  children,
+  variant = "primary",
+}: {
+  children: React.ReactNode;
+  variant?: "primary" | "secondary";
+}) {
+  const cls = variant === "secondary" ? `${styles.btn} ${styles.btnSecondary}` : styles.btn;
+  return (
+    <button type="button" className={cls}>
+      {children}
+    </button>
+  );
+}
 
 function Arrow() {
   return (
