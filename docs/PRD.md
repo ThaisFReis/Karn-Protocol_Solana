@@ -293,6 +293,7 @@ pub struct TokenValorId { pub valor_id: u64, pub bump: u8 }
 
 ***Escopo***
 - `mint(minter, recipient, valor_id)` com check de categoria
+- `mint_community(minter, recipient, valor_id)` — variante separada para badges Community (range 60–69), permitindo que qualquer membro com `credential_level > 0` minte sem autorização governamental; separação explícita simplifica RBAC e torna a surface de audit menor
 - `guardian_mint(guardian, account, valor_id)` com dual-auth (KRN-05) e checagem de `GuardianTracks`
 - Função `effective_rarity_for(account, valor)` aplicando regra primary/secondary
 - `set_guardian_tracks(guardian, track_ids)` (Governor-only)
@@ -523,11 +524,14 @@ pub struct CreditWindow {
 
 ***Entregáveis***
 - `instructions/revoke.rs`, `instructions/set_verified.rs`
+- `instructions/update_governor.rs` — transfere a referência de `Config.governor` para novo endereço; Governor-only; necessário para handoff pós-bootstrap quando a autoridade initial-deployer cede ao Governor PDA eleito; equivalente ao `update_governor` do Stellar
+- `instructions/update_treasury.rs` — mesma semântica para `Config.treasury`; permite redeployar Treasury sem redeployar Valocracy
 - 4 testes Bankrun: revoke ok, revoke não-governor falha, set_verified ok, set_verified em non-member falha
 
 ***Critério de Aceite***
 - Após revoke, `UserStats.credential_level` é exatamente decrementado por `effective_rarity`
 - PDAs do token revogado são fechadas (rent retornado)
+- `update_governor` por wallet não-governor retorna `NotAuthorized`; após chamada válida, `Config.governor` reflete o novo endereço
 
 ---
 
@@ -1064,6 +1068,8 @@ node test.mjs                           # imprime [class ValocracyClient]
 Esperado: pacote instalável em projeto vazio, exports tipados.
 
 ### 10.4 Verificação KRN (5 testes dedicados)
+
+Guia passo-a-passo completo disponível em `docs/TESTING.md` (7 camadas: pré-requisitos, contratos offline, Bankrun, devnet CLI, jornada visual no dApp, SDK, KRN-01..05).
 
 Cada KRN tem um arquivo `tests/krn/krn-0X.spec.ts`:
 - **KRN-01:** demonstra que shareholder não consegue redimir restricted reserves
