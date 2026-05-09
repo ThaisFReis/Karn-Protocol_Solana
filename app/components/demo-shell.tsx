@@ -1,14 +1,12 @@
 "use client";
 
-import { ConnectCard } from "@/components/connect-card";
 import { Header } from "@/components/header";
-import { ProfilePanel } from "@/components/profile-panel";
-import { ProposalsPanel } from "@/components/proposals-panel";
-import { DemoProviders } from "@/components/providers";
-import { TreasuryPanel } from "@/components/treasury-panel";
-import { useBrowserWallet } from "@/lib/browser-wallet";
 
 import styles from "./karn.module.css";
+
+const VALOCRACY = "6WEzighM5X9pCbwLpbnC3SHc8E92YtNcH7SsBDksLHgf";
+const GOVERNOR = "6RfCxo65k9KZaJZvpHDEaav1ahDcx7hn13XBdmDtdLRm";
+const TREASURY = "97LKXR8q7yg8GmQAYQzpZNLnttyaHbZhR61q6ANw3dbV";
 
 const STEPS = [
   {
@@ -27,40 +25,67 @@ const STEPS = [
 ];
 
 const SAMPLE_BADGES = [
-  { name: "Leadership", track: "Granted at genesis", weight: 2000, status: "active" as const },
-  { name: "Tech Contributor", track: "From a verified contribution", weight: 1000, status: "active" as const },
-  { name: "Governance Voter", track: "From past proposals", weight: 250, status: "decaying" as const },
-  { name: "Member Floor", track: "Everyone gets this", weight: 5, status: "active" as const },
+  { name: "Leadership", track: "Granted at genesis", weight: 2000, status: "active" as const, label: "Active" },
+  { name: "Tech Contributor", track: "From a verified contribution", weight: 1000, status: "active" as const, label: "Active" },
+  { name: "Governance Voter", track: "From past proposals", weight: 250, status: "decaying" as const, label: "Decaying" },
+  { name: "Member Floor", track: "Everyone gets this", weight: 5, status: "active" as const, label: "Active" },
+];
+
+const MARQUEE = [
+  "Merit > Capital",
+  "Non-transferable",
+  "Soulbound badges",
+  "180-day decay",
+  "Zero admin",
+  "Live on devnet",
+];
+
+const PROGRAMS = [
+  {
+    name: "valocracy",
+    desc: "Identity · soulbound badges · Mana with decay",
+    addr: VALOCRACY,
+  },
+  {
+    name: "governor",
+    desc: "Proposals · snapshot voting · execute",
+    addr: GOVERNOR,
+  },
+  {
+    name: "treasury",
+    desc: "SPL vault · governance-only transfers · scholarships",
+    addr: TREASURY,
+  },
 ];
 
 export function DemoShell() {
-  const { wallet, connect, disconnect, label, publicKey } = useBrowserWallet();
-
   return (
     <div className={styles.root}>
       <Header />
       <div className={styles.shell}>
-        <Hero connect={connect} disconnect={disconnect} label={label} publicKey={publicKey} />
+        <Hero />
         <WhatIsKarn />
-        <HowItWorks />
-        <SeeItLive wallet={wallet} />
-        <Closing />
       </div>
+      <MarqueeStrip />
+      <div className={styles.shell}>
+        <HowItWorks />
+        <SeeItLive />
+      </div>
+      <Closing />
     </div>
   );
 }
 
 /* ─────────────────────────────────────────── HERO */
 
-function Hero(props: {
-  connect: () => Promise<void>;
-  disconnect: () => Promise<void>;
-  label: string;
-  publicKey: { toBase58(): string } | null;
-}) {
+function Hero() {
   return (
     <section id="hero" className={`${styles.snap} ${styles.hero}`}>
       <div className={styles.heroDots} aria-hidden />
+      <span className={styles.heroSticker} aria-hidden>
+        <span className={styles.heroStickerDot} />
+        Devnet · Live
+      </span>
       <div className={styles.heroGrid}>
         <div>
           <p className={styles.heroIntro}>Karn Protocol · Solana Devnet</p>
@@ -71,19 +96,74 @@ function Hero(props: {
           </h1>
 
           <p className={styles.subhead}>
-            Karn replaces token-weighted voting with{" "}
-            <strong>non-transferable credentials</strong>. Power belongs to the people in the room, not to
-            whoever shows up with the most capital.
+            Karn is a <strong>governance module for Solana</strong>. It replaces
+            token-weighted voting with non-transferable credentials. Power
+            belongs to the people in the room, not to whoever shows up with the
+            most capital.
           </p>
 
           <div className={styles.ctaRow}>
-            <span className={styles.ctaHint}>Scroll · 4 sections</span>
+            <a
+              href="https://github.com/ThaisFReis/Karn-Protocol_Solana"
+              target="_blank"
+              rel="noreferrer"
+              className={styles.btn}
+              style={{ textDecoration: "none" }}
+            >
+              Read the source →
+            </a>
+            <span className={styles.ctaHint}>Open · MIT · Live on devnet</span>
           </div>
         </div>
 
-        <ConnectCard {...props} />
+        <SummaryCard />
       </div>
     </section>
+  );
+}
+
+function MarqueeStrip() {
+  const items = [...MARQUEE, ...MARQUEE, ...MARQUEE];
+  return (
+    <div className={styles.marquee} aria-hidden>
+      <div className={styles.marqueeTrack}>
+        {items.map((label, i) => (
+          <span key={`${label}-${i}`} className={styles.marqueeItem}>
+            <span className={styles.marqueeDot} />
+            {label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SummaryCard() {
+  return (
+    <aside className={styles.connectCard}>
+      <div>
+        <p className={styles.connectLabel}>Live on devnet</p>
+        <h3 className={styles.connectTitle}>Three Anchor programs.</h3>
+      </div>
+
+      <div className={styles.walletList}>
+        {PROGRAMS.map((p) => (
+          <div key={p.name} className={`${styles.walletRow} ${styles.walletRowActive}`}>
+            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+              {p.name}
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>
+              {p.addr.slice(0, 4)}…{p.addr.slice(-4)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <p className={styles.connectFootnote}>
+        Plug Karn into any Realms DAO as a voting-weight source. No fund
+        migration. No lock-in.
+      </p>
+    </aside>
   );
 }
 
@@ -141,23 +221,13 @@ function HowItWorks() {
 
 /* ─────────────────────────────────────────── SEE IT LIVE */
 
-function SeeItLive({ wallet }: { wallet: { publicKey: unknown } | null }) {
+function SeeItLive() {
   return (
     <section id="live" className={`${styles.snap} ${styles.section}`}>
-      <p className={styles.sectionLabel}>See it live</p>
-      <h2 className={styles.sectionTitle}>This is real, on-chain, right now.</h2>
+      <p className={styles.sectionLabel}>What a member looks like</p>
+      <h2 className={styles.sectionTitle}>Voting power is composed, not bought.</h2>
 
-      {wallet?.publicKey ? (
-        <DemoProviders wallet={wallet as never}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24 }}>
-            <ProfilePanel />
-            <ProposalsPanel />
-            <TreasuryPanel />
-          </div>
-        </DemoProviders>
-      ) : (
-        <SampleProfilePanel />
-      )}
+      <SampleProfilePanel />
     </section>
   );
 }
@@ -168,12 +238,15 @@ function SampleProfilePanel() {
 
   return (
     <article className={styles.panel}>
+      <span className={styles.sampleRibbon} aria-label="Illustration only">
+        Illustration · Not on-chain
+      </span>
       <header className={styles.panelHead}>
         <h3 className={styles.panelHeadTitle}>Sample Member</h3>
         <div className={styles.panelHeadMeta}>
           <span className={styles.techBadge}>
-            <span className={styles.techDot} />
-            Active member
+            <span className={styles.techDotStatic} />
+            Illustration
           </span>
           <span className={styles.pubkey}>A6Xs…iKGj</span>
         </div>
@@ -211,7 +284,7 @@ function SampleProfilePanel() {
               </span>
               <span className={styles.ledgerWeight}>{b.weight.toLocaleString()}</span>
               <span className={`${styles.ledgerStatus} ${styles[b.status]}`}>
-                {b.status === "active" ? "Active" : "Cooling"}
+                {b.label}
               </span>
             </div>
           ))}
@@ -241,17 +314,11 @@ function Closing() {
           </div>
 
           <div className={styles.closingCtaCol}>
-            <button type="button" className={`${styles.closingBtn} ${styles.closingBtnPrimary}`}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-                <DiscordIcon /> Join the community
-              </span>
-              <Arrow />
-            </button>
             <a
               href="https://github.com/ThaisFReis/Karn-Protocol_Solana"
               target="_blank"
               rel="noreferrer"
-              className={`${styles.closingBtn} ${styles.closingBtnGhost}`}
+              className={`${styles.closingBtn} ${styles.closingBtnPrimary}`}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
                 <GitHubIcon /> Read the source
@@ -267,8 +334,8 @@ function Closing() {
         <div className={styles.closingBottom}>
           <div className={styles.closingMark}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo_karn.svg" alt="" />
-            <span className={styles.closingMarkText}>KARN.</span>
+            <img src="/logo_karn.svg" alt="" className={styles.closingMarkIcon} />
+            <span className={styles.closingMarkText}>Karn Protocol</span>
           </div>
           <div className={styles.closingLegal}>
             <p>Open source · MIT · Built on Solana</p>
@@ -298,10 +365,3 @@ function GitHubIcon() {
   );
 }
 
-function DiscordIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.873-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.099.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.42 0-1.333.956-2.418 2.157-2.418 1.21 0 2.176 1.094 2.157 2.418 0 1.335-.956 2.42-2.157 2.42zm7.975 0c-1.183 0-2.157-1.085-2.157-2.42 0-1.333.955-2.418 2.157-2.418 1.21 0 2.176 1.094 2.157 2.418 0 1.335-.946 2.42-2.157 2.42z" />
-    </svg>
-  );
-}

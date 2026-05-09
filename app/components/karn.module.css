@@ -15,10 +15,15 @@
   height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
-  scroll-snap-type: y mandatory;
+  scroll-snap-type: y proximity;
   scroll-behavior: smooth;
   scroll-padding-top: 124px;
   overscroll-behavior-y: contain;
+}
+
+.root :global(:focus-visible) {
+  outline: 4px solid var(--purple);
+  outline-offset: 2px;
 }
 
 .root::-webkit-scrollbar {
@@ -325,7 +330,56 @@
   pointer-events: none;
   background-image: radial-gradient(circle, var(--ink) 1.5px, transparent 2px);
   background-size: 22px 22px;
-  opacity: 0.04;
+  opacity: 0.14;
+  mask-image: linear-gradient(180deg, var(--ink) 0%, var(--ink) 60%, transparent 100%);
+}
+
+/* ─── Hero signature sticker ───────────────────────── */
+
+.heroSticker {
+  position: absolute;
+  top: 32px;
+  right: 48px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--purple);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.heroStickerDot {
+  width: 8px;
+  height: 8px;
+  background: var(--ink);
+  display: inline-block;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@media (max-width: 880px) {
+  .heroSticker {
+    top: 16px;
+    right: 16px;
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroStickerDot {
+    animation: none;
+  }
 }
 
 .heroGrid {
@@ -475,9 +529,92 @@
   animation: pulse 2s ease-in-out infinite;
 }
 
+.techDotStatic {
+  width: 8px;
+  height: 8px;
+  background: var(--mute);
+  display: inline-block;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .techDot {
+    animation: none;
+  }
+}
+
+/* ─── Marquee divider (DESIGN.md) ──────────────────── */
+
+.marquee {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  background: var(--ink);
+  color: var(--cream);
+  border-top: 4px solid var(--ink);
+  border-bottom: 4px solid var(--ink);
+  overflow: hidden;
+  padding: 18px 0;
+}
+
+.marqueeTrack {
+  display: flex;
+  gap: 48px;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+
+.marqueeItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.marqueeDot {
+  width: 6px;
+  height: 6px;
+  background: var(--purple);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes marquee {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-33.3333%, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marqueeTrack {
+    animation: none;
+  }
+}
+
+/* ─── Sample ribbon ────────────────────────────────── */
+
+.sampleRibbon {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  background: var(--purple);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  transform: translate(8px, -50%);
+  z-index: 2;
 }
 
 /* ─── Connect Card ─────────────────────────────────── */
@@ -1239,20 +1376,21 @@
 /* ─── CTA closing ─────────────────────────────────── */
 
 .closing {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
   background: var(--ink);
   color: var(--paper);
   border-top: 8px solid var(--ink);
-  padding: 80px 0 32px;
+  padding: 80px 40px 32px;
   min-height: calc(100dvh - 124px);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 48px;
+  scroll-snap-align: start;
 }
 
 @media (max-width: 880px) {
   .closing {
-    padding: 56px 0 28px;
+    padding: 56px 20px 28px;
   }
 }
 
@@ -1262,8 +1400,9 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 56px;
+  justify-content: space-between;
   flex: 1;
+  gap: 56px;
 }
 
 .closingTop {
@@ -1419,7 +1558,7 @@
   gap: 14px;
 }
 
-.closingMark img {
+.closingMarkIcon {
   height: 36px;
   width: auto;
 }
@@ -1427,7 +1566,7 @@
 .closingMarkText {
   font-weight: 900;
   font-size: 1.6rem;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.03em;
   color: var(--paper);
 }
 

@@ -21,12 +21,6 @@
     "paths": {
       "@/*": [
         "./*"
-      ],
-      "@karn_lat/protocol-sdk-solana": [
-        "../sdk/dist/index.d.ts"
-      ],
-      "@karn_lat/protocol-sdk-solana/react": [
-        "../sdk/dist/react/index.d.ts"
       ]
     },
     "plugins": [

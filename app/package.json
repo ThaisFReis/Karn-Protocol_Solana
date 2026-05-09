@@ -9,13 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "^0.32.1",
-    "@karn_lat/protocol-sdk-solana": "file:../sdk",
-    "@solana/web3.js": "^1.95.0",
-    "next": "^15.3.2",
+    "next": "^15.5.16",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tweetnacl": "^1.0.3"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
